@@ -13,11 +13,13 @@ public class ExpiringMapImpl3 implements ExpiringMap {
 
     @Override
     public void put(int key, int value, long timeToLive) {
-        ExpirableValue expirableValue = new ExpirableValue(value);
-        valueMap.put(key, expirableValue);
-        executor.schedule(() -> {
-            valueMap.merge(key, expirableValue, (ev1, ev2) -> ev1 == ev2 ? null : ev1);
-        }, timeToLive, TimeUnit.MILLISECONDS);
+        synchronized ((Integer)(key % 100)) {
+            ExpirableValue expirableValue = new ExpirableValue(value);
+            valueMap.put(key, expirableValue);
+            executor.schedule(() -> {
+                valueMap.merge(key, expirableValue, (ev1, ev2) -> ev1 == ev2 ? null : ev1);
+            }, timeToLive, TimeUnit.MILLISECONDS);
+        }
     }
 
     @Override
