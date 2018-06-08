@@ -13,11 +13,10 @@ public class ExpiringMapImpl3 implements ExpiringMap {
 
     @Override
     public void put(int key, int value, long timeToLive) {
-        long timeToDie = System.currentTimeMillis() + timeToLive;
-        ExpirableValue expirableValue = new ExpirableValue(value, timeToDie);
+        ExpirableValue expirableValue = new ExpirableValue(value);
         valueMap.put(key, expirableValue);
         executor.schedule(() -> {
-            valueMap.replace(key, expirableValue, DEFAULT);
+            valueMap.merge(key, expirableValue, (ev1, ev2) -> ev1 == ev2 ? null : ev1);
         }, timeToLive, TimeUnit.MILLISECONDS);
     }
 
@@ -28,13 +27,17 @@ public class ExpiringMapImpl3 implements ExpiringMap {
 
     private static class ExpirableValue {
         Integer value;
-        long expirationTime;
 
-        ExpirableValue() {}
+        ExpirableValue() {
+        }
 
-        ExpirableValue(Integer value, long expirationTime) {
+        ExpirableValue(Integer value) {
             this.value = value;
-            this.expirationTime = expirationTime;
+        }
+
+        @Override
+        public final boolean equals(Object obj) {
+            return this == obj;
         }
     }
 }
